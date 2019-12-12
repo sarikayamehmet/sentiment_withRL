@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<!-- saved from url=(0072)https://mengxinji.github.io/Blog/2019-05-04/Sentiment-Analysis-Using-RL/ -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sentiment Analysis Using RL</title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="./Sentiment Analysis Using RL_files/main.css" type="text/css">
+
+  <!-- Font -->
+  <link rel="stylesheet" href="./Sentiment Analysis Using RL_files/font-awesome.min.css">
+  <link href="./Sentiment Analysis Using RL_files/SpoqaHanSans-kr.css" rel="stylesheet" type="text/css">
+  <link href="./Sentiment Analysis Using RL_files/css" rel="stylesheet">
+
+  <link rel="alternate" type="application/rss+xml" title="RSS Feed for Helen(Mengxin) Ji" href="https://mengxinji.github.io/Blog/feed.xml">
+  <!-- Begin Jekyll SEO tag v2.5.0 -->
+<title>Sentiment Analysis Using RL | Helen(Mengxin) Ji</title>
+<meta name="generator" content="Jekyll v3.8.5">
+<meta property="og:title" content="Sentiment Analysis Using RL">
+<meta property="og:locale" content="en_US">
+<meta name="description" content="personal blog - reading paper">
+<meta property="og:description" content="personal blog - reading paper">
+<link rel="canonical" href="https://mengxinji.github.io/Blog/2019-05-04/Sentiment-Analysis-Using-RL/">
+<meta property="og:url" content="https://mengxinji.github.io/Blog/2019-05-04/Sentiment-Analysis-Using-RL/">
+<meta property="og:site_name" content="Helen(Mengxin) Ji">
+<meta property="og:type" content="article">
+<meta property="article:published_time" content="2019-05-04T00:00:00-07:00">
+<script async="" src="./Sentiment Analysis Using RL_files/analytics.js.download"></script><script type="application/ld+json">
+{"datePublished":"2019-05-04T00:00:00-07:00","mainEntityOfPage":{"@type":"WebPage","@id":"https://mengxinji.github.io/Blog/2019-05-04/Sentiment-Analysis-Using-RL/"},"@type":"BlogPosting","url":"https://mengxinji.github.io/Blog/2019-05-04/Sentiment-Analysis-Using-RL/","headline":"Sentiment Analysis Using RL","description":"personal blog - reading paper","dateModified":"2019-05-04T00:00:00-07:00","@context":"http://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+
+  <!-- Google Analytics -->
+
+<script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', '', 'auto');
+ga('send', 'pageview');
+
+</script>
+
+
+
+<script src="./Sentiment Analysis Using RL_files/embed.js.download" data-timestamp="1576151235536"></script></head>
+
+<body>
+  <div class="content-container">
+    <header>
+  <div class="header-small">
+    <a href="https://mengxinji.github.io/Blog">Helen(Mengxin) Ji</a>
+  </div>
+</header>
+<div class="post">
+  <div class="post-title">Sentiment Analysis Using RL</div>
+  <span class="post-date">
+    <time>04 May 2019</time>
+  </span>
+  <div class="post-tag">
+    <ul>
+      
+      <li>
+        <a href="https://mengxinji.github.io/Blog/tags#Reinforcement%20Learning">
+          <span>Reinforcement Learning</span>
+        </a>
+      </li>
+      
+      
+      <li>
+        <a href="https://mengxinji.github.io/Blog/tags#OpenAI">
+          <span>OpenAI</span>
+        </a>
+      </li>
+      
+      
+      <li>
+        <a href="https://mengxinji.github.io/Blog/tags#Sentiment%20Analysis">
+          <span>Sentiment Analysis</span>
+        </a>
+      </li>
+      
+      
+    </ul>
+  </div>
+
+  <h2 id="introduction">Introduction</h2>
+
+<p>Representation learning <a href="https://ieeexplore.ieee.org/document/6472238">(Bengio   et   al.,   2013)</a> plays an important role in many modern machine learning systems. Natural language processing (NLP) is a hot topic that builds computational algorithms to let computer automatically learn, analyze and represent human language.</p>
+
+<p>In this paper, we propose a novel model that combines reinforcement learning (RL) method and supervised NLP method to predict sentence sentiment. We formulate sentiment-analysis task as a sequential decision process: current decisions (i.e., sentiment) in a sentence affects following decisions (sentiment), which can be naturally addressed by policy gradient method <a href="https://papers.nips.cc/paper/1713-policy-gradient-methods-for-reinforcement-learning-with-function-approximation.pdf">(Sutton et al.,2000)</a>. Since we cannot predict the sentiment until reaching end of sentence, we use delayed reward to guide the training process of policy for the problem. We calculate the reward based on the supervised learning with selected inputs from RL method.</p>
+
+<p>To summarize, the main contributions and novelties are as follows:</p>
+
+<ul>
+  <li>We propose an RL method to discover useful and meaningful words in a sentence to predict sentiment.</li>
+  <li>The performance is better or comparable to current baselines using supervised learning algorithm.</li>
+</ul>
+
+<h2 id="methodology">Methodology</h2>
+
+<p>Our goal of this project is to combine RL method for sentiment analysis besides supervised learning. We proposed two structures to improve the prediction of sentence sentiment.</p>
+
+<h3 id="policy--classification-network">Policy + Classification Network</h3>
+<p>The overall process is shown in the figure. In Policy Net, it uses simple LSTM to generate state values and sample action at each word. It keeps sampling until the end of a sentence, which will produce a sequence of actions for the sentence. Then we translate the actions into an input word sequence for supervised learning algorithm. For the Policy Network, we use LSTM and for the Classification Network, we adopt transformer and pre-trained BERT (bert-base-uncased) and then calculate delayed reward to Policy Network. Given the delayed reward after the full sentence, the process can be naturally addressed by policy gradient method <a href="https://papers.nips.cc/paper/1786-actor-critic-algorithms.pdf">(Konda and Tsitsiklis, 2000)</a>, actor-critic method  and proximal policy optimization <a href="https://arxiv.org/abs/1707.06347">(Schulman et al., 2017)</a>.</p>
+
+<p align="center">
+  <img width="300" height="320" src="./Sentiment Analysis Using RL_files/structure.png">
+</p>
+
+<h4 id="policy-network">Policy Network</h4>
+<p>The policy network is based on well-trained LSTM using pre-trained BERT embeddings to produce state values ($s_t$) and action sequence (a_t). It adopts the policy $\pi(a_t | s_t)$ and a delayed reward to guide the policy optimization. At each state (i.e., word) it samples an action with probability. In specific, the binary action space can be explained as {remain, delete}, i.e., whether keep or delete the word in the sentence to predict sentence sentiment. Then the policy is defined as:</p>
+
+<p><img src="./Sentiment Analysis Using RL_files/policy.svg" alt="policy" style="float:center; padding:16px"></p>
+
+<p>Based on the action sequence, we then pass the selected words to Classification Network to compute probability of the binary sentence sentiment. For policy optimization, we apply three different methods with different objective functions respectively.</p>
+
+<p align="center">
+  <img width="400" height="300" src="./Sentiment Analysis Using RL_files/loss.svg">
+</p>
+
+<h4 id="classification-network">Classification Network</h4>
+<p>Based on the action sequence, we then pass the selected words to Classification Network to compute $P(y|X)$, where y is the binary sentence sentiment. We adopt LSTM, transformer and pre-trained BERT as model structure and binary cross entropy as loss function:</p>
+
+<p><img src="./Sentiment Analysis Using RL_files/BCE.svg" alt="BCE" style="float:center; padding:16px"></p>
+
+<h4 id="training-details">Training Details</h4>
+
+<p>The entire training process consists of following steps: policy network heavily relies on well-tuned LSTM model, and classification network is then jointly trained together with policy network. The sudo algorithms are listed in the following section.</p>
+
+<h3 id="word-sentiment-network">Word Sentiment Network</h3>
+
+<p>We propose a second algorithm that combines RL and supervised learning method for sentiment analysis. For each state (i.e., word) in a sentence, we adopt pre-trained BERT to output two probabilities of positive sentiment, following forward sentence order and backward sentence order respectively. We then develop several loss functions as follows:</p>
+
+<ul>
+  <li>
+    <p>Use only the forward probabilities, with reward defined as:
+  <img src="./Sentiment Analysis Using RL_files/forward.svg" alt="forward" style="float:center; padding:16px"></p>
+  </li>
+  <li>Use two loss terms with same definition as previous one, and then adding them up;</li>
+  <li>Add the forward and backward log probabilities together and use it in PPO ratio.</li>
+</ul>
+
+<p align="center">
+  <img width="300" height="200" src="./Sentiment Analysis Using RL_files/wordprob.png">
+</p>
+
+<p>where  two probabilities are predicted probability given forward or backward sentence order inputs.</p>
+
+<h3 id="algorithms">Algorithms</h3>
+
+<p>We consider two structures as discussed above. For the policy and classification networks, the algorithms are listed as follows with respect to different RL methods:</p>
+
+<p align="center">
+  <img width="400" height="390" src="./Sentiment Analysis Using RL_files/VPG.png">
+</p>
+
+<p align="center">
+  <img width="400" height="400" src="./Sentiment Analysis Using RL_files/ActorCritic.png">
+</p>
+
+<p align="center">
+  <img width="400" height="420" src="./Sentiment Analysis Using RL_files/PPO.png">
+</p>
+
+<h2 id="experiments">Experiments</h2>
+
+<h3 id="dataset-and-baselines">Dataset and Baselines</h3>
+
+<p>We evaluated our models on SST (Stanford Sentiment Treebank, a public sentiment analysis dataset with five classes <a href="https://nlp.stanford.edu/~socherr/EMNLP2013_RNTN.pdf">(Socher et al., 2013)</a>) dataset for sentiment classification.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Models</th>
+      <th style="text-align: center">Accuracy</th>
+      <th style="text-align: right">AUC</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>LSTM</td>
+      <td style="text-align: center">0.7403</td>
+      <td style="text-align: right">&nbsp;</td>
+    </tr>
+    <tr>
+      <td>Transformer</td>
+      <td style="text-align: center">0.7981</td>
+      <td style="text-align: right">&nbsp;</td>
+    </tr>
+    <tr>
+      <td>Transformer + VPG</td>
+      <td style="text-align: center">0.7688</td>
+      <td style="text-align: right">&nbsp;</td>
+    </tr>
+    <tr>
+      <td>Transformer + AC</td>
+      <td style="text-align: center">0.7946</td>
+      <td style="text-align: right">&nbsp;</td>
+    </tr>
+    <tr>
+      <td>Transformer + PPO</td>
+      <td style="text-align: center">0.8045</td>
+      <td style="text-align: right">&nbsp;</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>This project presented models that combine reinforcement learning and supervised learning methods for language sentiment analysis. For the model that involves policy network and classification network, we find adding reinforcement learning method can improve the performance from transformer model and produce comparable results on pre-trained BERT model.</p>
+
+<h2 id="reference">Reference</h2>
+<p>Yoshua Bengio, Aaron Courville, and Pascal Vincent.2013.   Representation learning:  A review and new perspectives.IEEE transactions on pattern analysis and machine intelligence, 35(8):1798 - 1828.</p>
+
+<p>Vijay  R  Konda  and  John  N  Tsitsiklis.  2000.   Actor-critic algorithms. InAdvances in neural information processing systems, pages 1008 - 1014.</p>
+
+<p>John   Schulman,   Filip   Wolski,   Prafulla   Dhariwal,Alec  Radford,  and  Oleg  Klimov.  2017.Proximal policy optimization algorithms.arXiv preprint arXiv:1707.06347.</p>
+
+<p>Richard   Socher,   Alex   Perelygin,   Jean   Wu,   JasonChuang, Christopher D Manning, Andrew Ng, andChristopher  Potts.  2013.Recursive  deep  models for semantic compositionality over a sentiment tree-bank.    InProceedings of the 2013 conference on empirical methods in natural language processing, pages 1631 - 1642.</p>
+
+<p>Richard  S  Sutton,  David  A  McAllester,  Satinder  PSingh,  and  Yishay  Mansour.  2000.    Policy  gradient  methods  for  reinforcement  learning  with  function approximation. InAdvances in neural information processing systems, pages 1057 - 1063.</p>
+
+
+
+  <!-- Disqus -->
+  
+  <div class="post-disqus">
+      <section id="disqus_thread"></section>
+      <script>
+
+/**
+*  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+*  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+/*
+var disqus_config = function () {
+this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+*/
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = '//Blog.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+  </div>
+  
+
+</div>
+
+
+    <!-- Documents about icons are here: http://fontawesome.io/icons/ -->
+<div class="footer">
+  <hr>
+  <div class="footer-link">
+    
+    <a href="https://www.facebook.com/your-id"><i class="fa fa-facebook" aria-hidden="true"></i></a>
+    
+	
+	
+    <a href="https://www.youtube.com/user/your-id"><i class="fa fa-youtube" aria-hidden="true"></i></a>
+    
+	
+	
+    <a href="https://www.youtube.com/channel/your-id"><i class="fa fa-youtube-play" aria-hidden="true"></i></a>
+    
+
+    
+    <a href="https://twitter.com/Helen_econ"><i class="fa fa-twitter" aria-hidden="true"></i></a>
+    
+
+    
+    <a href="https://github.com/MengxinJi"><i class="fa fa-github" aria-hidden="true"></i></a>
+    
+	
+	
+    <a href="http://stackoverflow.com/users/your-id"><i class="fa fa-stack-overflow" aria-hidden="true"></i></a>
+    
+	
+	
+    <a href="https://www.quora.com/profile/your-id"><i class="fa fa-quora" aria-hidden="true"></i></a>
+    
+
+    
+    <a href="https://www.linkedin.com/in/mengxinji"><i class="fa fa-linkedin" aria-hidden="true"></i></a>
+    
+	
+	
+    <a href="https://www.pinterest.com/your-id"><i class="fa fa-pinterest" aria-hidden="true"></i></a>
+    
+	
+	
+    <a href="https://plus.google.com/your-id"><i class="fa fa-google-plus" aria-hidden="true"></i></a>
+    
+	
+	
+    <a href="https://www.instagram.com/your-id"><i class="fa fa-instagram" aria-hidden="true"></i></a>
+    
+	
+	
+    <a href="https://www.reddit.com/user/your-id"><i class="fa fa-reddit" aria-hidden="true"></i></a>
+    
+
+    
+    <a href="https://medium.com/@your-id"><i class="fa fa-medium" aria-hidden="true"></i></a>
+    
+
+    
+    <a href="https://your-id.tumblr.com/"><i class="fa fa-tumblr" aria-hidden="true"></i></a>
+    
+
+    
+    <a href="mailto:mji@ucdavis.edu"><i class="fa fa-envelope" aria-hidden="true"></i></a>
+    
+
+  </div>
+  © 2019 Helen. All rights reserved.
+</div>
+
+  </div>
+
+
+</body></html>
